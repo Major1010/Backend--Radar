@@ -1,0 +1,29 @@
+{
+  "name": "media-downloader-backend",
+  "version": "1.0.0",
+  "description": "Backend API & Media processing server for Universal Media Downloader",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "setup-tools": "node scripts/setup-tools.js",
+    "test": "node tests/filename.test.js"
+  },
+  "keywords": [
+    "downloader",
+    "backend",
+    "api",
+    "yt-dlp",
+    "ffmpeg"
+  ],
+  "author": "Antigravity",
+  "license": "ISC",
+  "dependencies": {
+    "@distube/ytdl-core": "^4.16.4",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "fluent-ffmpeg": "^2.1.3"
+  }
+}
