@@ -1,9 +1,8 @@
-FROM node:20-bullseye-slim
+FROM node:20-bookworm-slim
 
-# Install Python 3, FFmpeg, and curl
+# Install Python 3, FFmpeg, and curl from active Debian Bookworm repos
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
-    python3-pip \
     ffmpeg \
     curl \
     ca-certificates \
