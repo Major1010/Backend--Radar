@@ -164,6 +164,31 @@ async function resolveBinary(name) {
 }
 
 /**
+ * Test whether a binary can actually be executed on the current OS
+ * @param {string} binPath
+ * @returns {Promise<boolean>}
+ */
+function testBinaryExecutable(binPath) {
+  return new Promise((resolve) => {
+    if (!binPath || !fs.existsSync(binPath)) return resolve(false);
+    try {
+      const proc = spawn(binPath, ['--version'], {
+        shell: false,
+        windowsHide: true
+      });
+      proc.on('close', (code) => {
+        resolve(code === 0);
+      });
+      proc.on('error', () => {
+        resolve(false);
+      });
+    } catch (e) {
+      resolve(false);
+    }
+  });
+}
+
+/**
  * Resolve FFmpeg executable
  * @returns {Promise<string|null>}
  */
@@ -172,11 +197,20 @@ async function getFfmpegPath() {
 }
 
 /**
- * Resolve yt-dlp executable
+ * Resolve yt-dlp executable and verify it is truly runnable
  * @returns {Promise<string|null>}
  */
 async function getYtDlpPath() {
-  return await resolveBinary('yt-dlp');
+  const candidate = await resolveBinary('yt-dlp');
+  if (candidate) {
+    const isWorking = await testBinaryExecutable(candidate);
+    if (isWorking) return candidate;
+    console.warn(`⚠️ Detected yt-dlp binary at "${candidate}" cannot execute (e.g. missing python3). Purging broken file to download standalone binary...`);
+    if (candidate.startsWith(BIN_DIR)) {
+      try { fs.unlinkSync(candidate); } catch (e) {}
+    }
+  }
+  return null;
 }
 
 /**
@@ -326,8 +360,9 @@ function downloadFile(fileUrl, destPath, onProgress) {
 async function downloadYtDlp(onProgress) {
   const isWin = process.platform === 'win32';
   const isMac = process.platform === 'darwin';
+  const isArm = process.arch === 'arm64' || process.arch === 'aarch64';
 
-  let downloadUrl = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp';
+  let downloadUrl = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux';
   let targetName = 'yt-dlp';
 
   if (isWin) {
@@ -336,11 +371,17 @@ async function downloadYtDlp(onProgress) {
   } else if (isMac) {
     downloadUrl = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos';
     targetName = 'yt-dlp';
+  } else if (isArm) {
+    downloadUrl = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux_aarch64';
+    targetName = 'yt-dlp';
+  } else {
+    downloadUrl = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux';
+    targetName = 'yt-dlp';
   }
 
   const targetPath = path.join(BIN_DIR, targetName);
 
-  console.log(`⬇️ Downloading official standalone yt-dlp from: ${downloadUrl}`);
+  console.log(`⬇️ Downloading official standalone yt-dlp binary from: ${downloadUrl}`);
   await downloadFile(downloadUrl, targetPath, onProgress);
   console.log(`✅ yt-dlp successfully installed to: ${targetPath}`);
 
